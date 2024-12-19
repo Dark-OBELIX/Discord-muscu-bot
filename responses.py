@@ -18,7 +18,7 @@ def format_session_details(results: List[Tuple], session_number: int) -> str:
 
     return formatted_result
 
-def get_response(user_input: str, sender: str, db_handler: DatabaseHandler):
+def get_response(userid : int, user_input: str, sender: str, db_handler: DatabaseHandler):
     """
     Gère la réponse en fonction de l'entrée utilisateur.
     :param user_input: Le message de l'utilisateur
@@ -42,7 +42,7 @@ def get_response(user_input: str, sender: str, db_handler: DatabaseHandler):
     elif 'séance' in lowered:
         session_number = ''.join(filter(str.isdigit, lowered))
         if session_number:
-            results = db_handler.get_session_details(user_id=1, session_number=int(session_number))
+            results = db_handler.get_session_details(userid, session_number=int(session_number))
             return format_session_details(results, session_number)
         else:
             return "Merci de spécifier un numéro de séance valide, par exemple : 'séance 3'."

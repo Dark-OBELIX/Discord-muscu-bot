@@ -12,6 +12,7 @@ class DatabaseHandler:
         self.connection.row_factory = sqlite3.Row  # Permet un accès plus lisible aux colonnes
 
     def get_session_details(self, user_id: int, session_number: int) -> List[Tuple]:
+        print("session detail")
         """
         Récupère les détails de la séance pour un utilisateur donné.
         :param user_id: L'ID de l'utilisateur.
@@ -51,7 +52,7 @@ class DatabaseHandler:
         try:
             cursor = self.connection.cursor()
             cursor.execute("""
-                INSERT INTO Table_historique (ID_user, date, ID_seance_user, ID_exo, REP, SET, Poids)
+                INSERT INTO Table_historique (ID_user, today_date, ID_seance_user, ID_exo, REP, SETS, Poids)
                 VALUES (?, DATE('now'), ?, ?, ?, ?, ?)
             """, (user_id, session_number, exo, reps, sets, poids))
             self.connection.commit()
@@ -59,3 +60,18 @@ class DatabaseHandler:
             print(f"Erreur SQLite : {e}")
         finally:
             cursor.close()
+
+    def user_exists(self, user_id: int) -> bool:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT 1 FROM users WHERE id = ?", (user_id,))
+        return cursor.fetchone() is not None
+
+    def add_user(self, user_id: int, username: str) -> None:
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO users (id, username) VALUES (?, ?)", (user_id, username))
+        self.conn.commit()
+
+    def update_username(self, user_id: int, username: str) -> None:
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE users SET username = ? WHERE id = ?", (username, user_id))
+        self.conn.commit()

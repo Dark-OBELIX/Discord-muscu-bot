@@ -19,12 +19,15 @@ client: Client = Client(intents=intents)
 db_handler = DatabaseHandler("Muscu.db")
 
 # STEP 3: MESSAGE FUNCTIONALITY
-async def send_message(message: Message, user_message: str) -> None:
+async def send_message(message: Message, user_message: str, user: User) -> None:
+    print("send messages")
     if not user_message:
         return
 
     try:
-        response = get_response(user_message, str(message.author), db_handler)
+        response = get_response(user.id, user_message, str(message.author), db_handler)
+
+        print(user.id, user_message, str(message.author), db_handler)
         # Gestion des réponses avec emoji
         if isinstance(response, tuple):
             text, emoji = response
@@ -47,18 +50,36 @@ async def send_message(message: Message, user_message: str) -> None:
 async def on_ready() -> None:
     print(f'{client.user} is now running!')
 
+# Function to add a new user to the database
+async def add_new_user(user: User) -> None:
+    if not db_handler.user_exists(user.id):
+        db_handler.add_user(user.id, user.name)
+        await user.send(f"Bienvenue {user.name}! Vous avez été ajouté à la base de données. Veuillez choisir un nom d'utilisateur en répondant avec !setname <votre_nom>.")
+
+# Function to set the username
+async def set_username(user: User, username: str) -> None:
+    db_handler.update_username(user.id, username)
+    await user.send(f"Votre nom d'utilisateur a été mis à jour en {username}.")
+
+
 # STEP 5: HANDLING INCOMING MESSAGES
 @client.event
 async def on_message(message: Message) -> None:
     if message.author == client.user:
         return
 
-    username: str = str(message.author)
-    user_message: str = message.content
-    channel: str = str(message.channel)
+    # Check if the user is new and add them to the database
+    await add_new_user(message.author)
 
-    print(f'[{channel}] {username}: "{user_message}"')
-    await send_message(message, user_message)
+    user_message = message.content
+
+    # Handle setting the username
+    if user_message.startswith("!setname "):
+        new_username = user_message.split(" ", 1)[1]
+        await set_username(message.author, new_username)
+        return
+
+    await send_message(message, user_message, message.author)
 
 @client.event
 async def on_reaction_add(reaction: Reaction, user: User) -> None:
@@ -72,6 +93,7 @@ async def on_reaction_add(reaction: Reaction, user: User) -> None:
         if match:
             session_number = int(match.group(1))  # Numéro de la séance
             user_id = user.id  # Utiliser l'ID de l'utilisateur qui réagit
+            print("ID : ", user_id, "SEssion number", session_number)
             # Récupérer les détails de la séance
             results = db_handler.get_session_details(user_id=user_id, session_number=session_number)
 
